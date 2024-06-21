@@ -11,8 +11,8 @@
 #endif
 #include "libretro.h"
 
-#define VIDEO_WIDTH 256
-#define VIDEO_HEIGHT 384
+#define VIDEO_WIDTH 320
+#define VIDEO_HEIGHT 240
 #define VIDEO_PIXELS VIDEO_WIDTH * VIDEO_HEIGHT
 # define M_PI 3.14159265358979323846
 
@@ -70,7 +70,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "skeleton";
    info->library_version  = "0.1";
    info->need_fullpath    = true;
-   info->valid_extensions = "";
+   info->valid_extensions = "example";
 }
 
 static retro_video_refresh_t video_cb;
@@ -98,6 +98,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+
+    bool no_rom = false;
+    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 
    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
       log_cb = logging.log;
