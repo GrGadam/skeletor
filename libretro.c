@@ -14,6 +14,7 @@
 #define VIDEO_WIDTH 256
 #define VIDEO_HEIGHT 384
 #define VIDEO_PIXELS VIDEO_WIDTH * VIDEO_HEIGHT
+# define M_PI 3.14159265358979323846
 
 static uint8_t *frame_buf;
 static struct retro_log_callback logging;
