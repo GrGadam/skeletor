@@ -1,5 +1,5 @@
 # ============================================================================
-#   RGBPLAYER LIBRETRO MAKEFILE (SF2000-backed)
+#   SF2000 SKELETOR LIBRETRO MAKEFILE
 # ============================================================================
 
 STATIC_LINKING := 0
@@ -52,7 +52,7 @@ endif
 # =============================================================================
 
 CORE_DIR     := .
-TARGET_NAME  := rgbplayer
+TARGET_NAME  := skeletor
 LIBM         := -lm
 
 ifeq ($(ARCHFLAGS),)
