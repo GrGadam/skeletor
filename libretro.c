@@ -11,8 +11,8 @@
 #endif
 #include "libretro.h"
 
-#define VIDEO_WIDTH 256
-#define VIDEO_HEIGHT 384
+#define VIDEO_WIDTH 320
+#define VIDEO_HEIGHT 240
 #define VIDEO_PIXELS VIDEO_WIDTH * VIDEO_HEIGHT
 
 static uint8_t *frame_buf;
@@ -38,13 +38,17 @@ static retro_environment_t environ_cb;
 
 void retro_init(void)
 {
-   frame_buf = (uint8_t*)malloc(VIDEO_PIXELS * sizeof(uint32_t));
+   frame_buf = (uint8_t*)malloc(VIDEO_PIXELS * sizeof(uint16_t));
+
+   uint16_t *fb = (uint16_t*)frame_buf;
+   for (int i = 0; i < VIDEO_PIXELS; i++)
+      fb[i] = 0x07E0;
+
    const char *dir = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir)
    {
       snprintf(retro_base_directory, sizeof(retro_base_directory), "%s", dir);
    }
-   
 }
 
 void retro_deinit(void)
@@ -80,8 +84,8 @@ static retro_input_state_t input_state_cb;
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   float aspect                = 0.0f;
-   float sampling_rate         = 30000.0f;
+   float aspect                = 4.0f / 3.0f;
+   float sampling_rate         = 44100.0f;
 
 
    info->geometry.base_width   = VIDEO_WIDTH;
@@ -92,6 +96,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
    last_aspect                 = aspect;
    last_sample_rate            = sampling_rate;
+
+   info->timing.sample_rate    = sampling_rate;
+   info->timing.fps            = 60.0;
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -178,7 +185,7 @@ void retro_run(void)
 {
    update_input();
 
-
+   video_cb(frame_buf, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_WIDTH * 2);
 
    bool updated = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
@@ -197,11 +204,11 @@ bool retro_load_game(const struct retro_game_info *info)
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      log_cb(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
-      return false;
+       log_cb(RETRO_LOG_INFO, "RGB565 format not supported.\n");
+       return false;
    }
 
    snprintf(retro_game_path, sizeof(retro_game_path), "%s", info->path);
