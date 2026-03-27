@@ -5,6 +5,10 @@
 #include <string.h>
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #include <stdio.h>
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
@@ -27,7 +31,6 @@ char retro_game_path[4096];
 static inline void put_pixel(int x, int y, uint16_t color);
 
 // =================================================== FOR SCREEN DEBUG ===================================================
-// 8x8-as minimál font (csak A–Z, 0–9, :, -, space)
 static const uint8_t font8x8[128][8] = {
     ['A'] = {0x18,0x24,0x42,0x7E,0x42,0x42,0x42,0x00},
     ['B'] = {0x7C,0x42,0x42,0x7C,0x42,0x42,0x7C,0x00},
@@ -149,7 +152,7 @@ void retro_get_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
    info->library_name     = "skeleton";
    info->library_version  = "0.1";
-   info->need_fullpath    = true;
+   info->need_fullpath    = false;
    info->valid_extensions = "";
 }
 
@@ -162,7 +165,7 @@ static retro_input_state_t input_state_cb;
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    float aspect                = 4.0f / 3.0f;
-   float sampling_rate         = 44100.0f;
+   float sampling_rate         = 22050.0f;
 
 
    info->geometry.base_width   = VIDEO_WIDTH;
@@ -181,6 +184,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+
+   bool no_content = true;
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
 
    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
       log_cb = logging.log;
@@ -231,31 +237,11 @@ void retro_reset(void)
 
 }
 
-/*
 static void update_input(void)
 {
-    input_poll_cb();
+   if (!input_poll_cb || !input_state_cb)
+      return;
 
-    int up    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
-    int down  = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
-    int left  = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
-    int right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-
-    int a     = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);
-    int b     = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
-    int x     = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X);
-    int y     = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y);
-
-    int l     = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L);
-    int r     = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R);
-
-    int start = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
-    int sel   = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
-}
-*/
-
-static void update_input(void)
-{
     input_poll_cb();
 
     int y = 10;
@@ -304,6 +290,9 @@ static void check_variables(void)
 
 static void audio_callback(void)
 {
+   if (!audio_cb)
+      return;
+
    for (unsigned i = 0; i < 30000 / 60; i++, phase++)
    {
       int16_t val = 0x800 * sinf(2.0f * M_PI * phase * 300.0f / 30000.0f);
@@ -320,6 +309,9 @@ static void audio_set_state(bool enable)
 
 void retro_run(void)
 {
+   if (!frame_buf || !video_cb)
+      return;
+
    //clear screen to black
    memset(frame_buf, 0x00, VIDEO_WIDTH * VIDEO_HEIGHT * 2);
 
@@ -351,7 +343,11 @@ bool retro_load_game(const struct retro_game_info *info)
        return false;
    }
 
-   snprintf(retro_game_path, sizeof(retro_game_path), "%s", info->path);
+   if (info && info->path)
+      snprintf(retro_game_path, sizeof(retro_game_path), "%s", info->path);
+   else
+      retro_game_path[0] = '\0';
+
    struct retro_audio_callback audio_cb = { audio_callback, audio_set_state };
    use_audio_cb = environ_cb(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, &audio_cb);
 
@@ -361,10 +357,7 @@ bool retro_load_game(const struct retro_game_info *info)
    return true;
 }
 
-void retro_unload_game(void)
-{
-
-}
+void retro_unload_game(void) {}
 
 unsigned retro_get_region(void)
 {
@@ -403,8 +396,7 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-void retro_cheat_reset(void)
-{}
+void retro_cheat_reset(void) {}
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
@@ -412,4 +404,3 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    (void)enabled;
    (void)code;
 }
-

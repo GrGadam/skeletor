@@ -1,0 +1,6 @@
+{
+    "code-runner.runInTerminal": true,
+    "code-runner.executorMap": {
+        "c": "bash -c \"make clean && make && retroarch -L ./skeletor_libretro.so --verbose\""
+    }
+}
